@@ -1,0 +1,11 @@
+nodes = [
+    {
+        Host = "127.0.0.1:3306",
+        ServerId = 101,
+        User = "root",
+        Password = "123456",
+        Db = "test",
+        Tables = ["table_name", "test_a"],
+        Urls = ["http://www.baidu.com", "http://www.sina.com"]
+    }
+]

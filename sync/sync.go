@@ -16,13 +16,14 @@ type Sync struct {
 	Db          string
 	Tables      []string
 	ServerId    uint32
+	Urls        []string
 	ExitCh      chan int
 	canal       *canal.Canal
 	WaitWrapper util.WaitGroupWrapper
 	Dispatch    *Dispatch
 }
 
-func NewSync(addr, user, password, db string, tables []string, serverId uint32) *Sync {
+func NewSync(addr, user, password, db string, tables []string, serverId uint32, urls []string) *Sync {
 	sync := new(Sync)
 	sync.Addr = addr
 	sync.User = user
@@ -30,6 +31,7 @@ func NewSync(addr, user, password, db string, tables []string, serverId uint32) 
 	sync.Db = db
 	sync.Tables = tables
 	sync.ServerId = serverId
+	sync.Urls = urls
 	sync.ExitCh = make(chan int)
 
 	return sync
@@ -58,7 +60,7 @@ func (s *Sync) Run() {
 		EvCh: make(chan *canal.RowsEvent),
 	}
 	s.Dispatch = dispatcher
-	s.WaitWrapper.Wrap(func() {dispatcher.Loop("www.baidu.com")})
+	s.WaitWrapper.Wrap(func() {dispatcher.Loop(s.Urls)})
 
 	handler := &MyEventHandler{ServerId: s.ServerId, Dispatcher: dispatcher}
 	c.SetEventHandler(handler)

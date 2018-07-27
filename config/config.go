@@ -1,18 +1,35 @@
-package main
+package config
 
 import (
 	"github.com/spf13/viper"
-	"github.com/siddontang/go-mysql/canal"
-	"fmt"
 )
 
-var SyncCfgs []*canal.Config
+type Node struct {
+	Host string
+	ServerId uint32
+	User string
+	Password string
+	Db string
+	Tables []string
+	Urls []string
+}
 
-func main() {
-	viper.AddConfigPath("./config/conf.yml")
-	viper.SetConfigType("yaml")
+type Nodes struct {
+	Nodes []Node
+}
 
-	nodes := viper.Get("nodes")
-	fmt.Printf("%v\n", nodes)
+func GetNodes() (Nodes, error) {
+	viper.SetConfigFile("./config/conf.toml")
+	viper.SetConfigType("toml")
+	var nodes Nodes
+	err := viper.ReadInConfig()
+	if err != nil {
+		return nodes, err
+	}
 
+	err = viper.Unmarshal(&nodes)
+	if err != nil {
+		return nodes, err
+	}
+	return nodes, nil
 }

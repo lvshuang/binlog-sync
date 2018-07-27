@@ -30,17 +30,19 @@ type FailedEv struct {
 	PushTime int64
 }
 
-func (d *Dispatch) Loop(url string) {
-	d.Urls = append(d.Urls, url)
+func (d *Dispatch) Loop(urls []string) {
+	for _, url := range urls {
+		d.Urls = append(d.Urls, url)
+	}
 	for i := 0; i < 5; i ++ {
-		d.Wrap(func() {d.loop(url)})
+		d.Wrap(func() {d.loop()})
 	}
 	d.Wrap(func() {d.loopFailedEv()})
 	d.Wait()
 	log.Infoln("dispatch exited")
 }
 
-func (d *Dispatch) loop(url string) {
+func (d *Dispatch) loop() {
 	for  {
 		select {
 		case ev := <- d.EvCh:
