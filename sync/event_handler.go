@@ -11,6 +11,8 @@ import (
 	"strings"
 	"io/ioutil"
 	"time"
+	"fmt"
+	"errors"
 )
 
 type Dispatch struct {
@@ -141,6 +143,10 @@ func (d *Dispatch) httpPost(url string, postJson string, retryTime int64) error 
 	if err != nil {
 		log.Errorf("push to url failed, url: %s, data: %s, error: %v\n", url, postJson, err)
 		return err
+	}
+	if resp.StatusCode != 200 {
+		log.Errorf("push to url failed, url: %s, data: %s, error: http code is %d\n", url, postJson, resp.StatusCode)
+		return errors.New(fmt.Sprintf("response http code is %d", resp.StatusCode))
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
