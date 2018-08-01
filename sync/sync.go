@@ -57,7 +57,7 @@ func (s *Sync) Run() {
 
 	dispatcher := &Dispatch{
 		ExitCh: make(chan int),
-		EvCh: make(chan *canal.RowsEvent),
+		EvCh: make(chan *canal.RowsEvent, 10),
 	}
 	s.Dispatch = dispatcher
 	s.WaitWrapper.Wrap(func() {dispatcher.Loop(s.Urls)})
