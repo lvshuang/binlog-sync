@@ -15,6 +15,8 @@ import (
 	"errors"
 )
 
+var retryIntervalTimes = []int64{1, 15, 45, 120, 300, 900, 1920, 3840, 10800, 18000}
+
 type Dispatch struct {
 	EvCh chan *canal.RowsEvent
 	ExitCh chan int
@@ -79,25 +81,22 @@ func (d *Dispatch) dispatchFailedEv() {
 	for key, failedEv := range d.FailedEvs {
 		var pushTime int64
 		if failedEv.LastRetryTime > 0 {
-			pushTime = failedEv.LastRetryTime + (failedEv.RetryTimes + 1) * 5
+			pushTime = failedEv.LastRetryTime + retryIntervalTimes[failedEv.RetryTimes - 1]
 		} else {
-			pushTime = failedEv.PushTime + (failedEv.RetryTimes + 1) * 5
+			pushTime = failedEv.PushTime + retryIntervalTimes[failedEv.RetryTimes -1]
 		}
 		// 还没达到重试时间
 		if (pushTime > timestamp) {
-			log.Infoln("时间未到")
 			continue
 		}
 
-		d.FailedEvs = append(d.FailedEvs[:key], d.FailedEvs[key+1:]...)
-		if (failedEv.RetryTimes >= 10) {
+		d.FailedEvs = append(d.FailedEvs[:key], d.FailedEvs[key+1:]...) // 从重试队列中删除当前元素
+		if (failedEv.RetryTimes > 10) {
 			log.Printf("ev: %v retry times > 10, stop retry", failedEv.Ev)
 			continue
 		}
-
-		var retryTime int64
-		retryTime = failedEv.RetryTimes + 1
-		err := d.httpPost(failedEv.Url, failedEv.PostJson, retryTime)
+		
+		err := d.httpPost(failedEv.Url, failedEv.PostJson, failedEv.RetryTimes)
 		if err != nil {
 			fEv := &FailedEv{
 				Ev: failedEv.Ev,
@@ -128,7 +127,7 @@ func (d *Dispatch) dispatch(ev *canal.RowsEvent) {
 			fEv := &FailedEv{
 				Ev: ev,
 				PostJson: postJson,
-				RetryTimes: retryTime,
+				RetryTimes: retryTime + 1,
 				Url: url,
 				PushTime: timestamp,
 			}
