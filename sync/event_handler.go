@@ -23,6 +23,7 @@ type Dispatch struct {
 	util.WaitGroupWrapper
 	Urls []string
 	FailedEvs []*FailedEv
+	HttpClient *http.Client
 }
 
 type FailedEv struct {
@@ -32,6 +33,23 @@ type FailedEv struct {
 	RetryTimes int64    // 重试次数
 	LastRetryTime int64 // 上一次重试时间
 	PushTime int64
+}
+
+func NewDispatch() *Dispatch {
+	tr := &http.Transport{
+		MaxIdleConns:       0,
+		MaxIdleConnsPerHost: 5,
+		IdleConnTimeout:    30 * time.Second,
+		DisableCompression: true,
+	}
+
+	dispatcher := &Dispatch{
+		ExitCh: make(chan int),
+		EvCh: make(chan *canal.RowsEvent, 10),
+		HttpClient: &http.Client{Transport: tr},
+	}
+
+	return dispatcher
 }
 
 func (d *Dispatch) Loop(urls []string) {
@@ -138,7 +156,7 @@ func (d *Dispatch) dispatch(ev *canal.RowsEvent) {
 
 func (d *Dispatch) httpPost(url string, postJson string, retryTime int64) error {
 	log.Printf("push to url: %s\n, data: %s, retry time: %d\n", url, postJson, retryTime)
-	resp, err := http.Post(url, "application/json", strings.NewReader(postJson))
+	resp, err := d.HttpClient.Post(url, "application/json", strings.NewReader(postJson))
 	if err != nil {
 		log.Errorf("push to url failed, url: %s, data: %s, error: %v\n", url, postJson, err)
 		return err
