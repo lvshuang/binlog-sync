@@ -55,10 +55,7 @@ func (s *Sync) Run() {
 		log.Fatalf("New Canel error: %v\n", err)
 	}
 
-	dispatcher := &Dispatch{
-		ExitCh: make(chan int),
-		EvCh: make(chan *canal.RowsEvent, 10),
-	}
+	dispatcher := NewDispatch()
 	s.Dispatch = dispatcher
 	s.WaitWrapper.Wrap(func() {dispatcher.Loop(s.Urls)})
 
